@@ -1,0 +1,163 @@
+-- create integration object that contains the access information
+CREATE STORAGE INTEGRATION gcp_integration
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = GCS
+  ENABLED = TRUE
+  STORAGE_ALLOWED_LOCATIONS = ('gcs://snowflakecsvfile', 'gcs://snowflakejsonfile');
+
+  
+-- Describe integration object to provide access
+DESC STORAGE integration gcp_integration;
+
+
+-- create file format
+create or replace file format Our_first_DB.public.fileformat_gcp
+    TYPE = CSV
+    FIELD_DELIMITER = ','
+    SKIP_HEADER = 1;
+
+-- create stage object
+create or replace stage Our_first_DB.public.stage_gcp
+    STORAGE_INTEGRATION = gcp_integration
+    URL = 'gcs://snowflakecsvfile'
+    FILE_FORMAT = fileformat_gcp;
+
+LIST @Our_first_DB.public.stage_gcp;
+
+---- Query files & Load data ----
+
+--query files
+SELECT 
+$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
+$12,$13,$14,$15,$16,$17,$18,$19,$20
+FROM @Our_first_DB.public.stage_gcp;
+
+
+create or replace table happiness (
+    country_name varchar,
+    regional_indicator varchar,
+    ladder_score number(4,3),
+    standard_error number(4,3),
+    upperwhisker number(4,3),
+    lowerwhisker number(4,3),
+    logged_gdp number(5,3),
+    social_support number(4,3),
+    healthy_life_expectancy number(5,3),
+    freedom_to_make_life_choices number(4,3),
+    generosity number(4,3),
+    perceptions_of_corruption number(4,3),
+    ladder_score_in_dystopia number(4,3),
+    explained_by_log_gpd_per_capita number(4,3),
+    explained_by_social_support number(4,3),
+    explained_by_healthy_life_expectancy number(4,3),
+    explained_by_freedom_to_make_life_choices number(4,3),
+    explained_by_generosity number(4,3),
+    explained_by_perceptions_of_corruption number(4,3),
+    dystopia_residual number (4,3));
+    
+    
+COPY INTO HAPPINESS
+FROM @Our_first_DB.public.stage_gcp;
+
+SELECT * FROM HAPPINESS;
+-----------UNLOADING DATA --------------------------------------------------------------------------------------------------------------------------
+
+
+
+-- create integration object that contains the access information
+CREATE STORAGE INTEGRATION gcp_integration
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = GCS
+  ENABLED = TRUE
+  STORAGE_ALLOWED_LOCATIONS = ('gcs://snowflakecsvfile', 'gcs://snowflakejsonfile');
+  
+  
+-- create file format
+create or replace file format our_first_DB.public.fileformat_gcp
+    TYPE = CSV
+    FIELD_DELIMITER = ','
+    SKIP_HEADER = 1;
+
+-- create stage object
+create or replace stage our_first_DB.public.stage_gcp
+    STORAGE_INTEGRATION = gcp_integration
+    URL = 'gcs://snowflakecsvfile/csv_happiness'
+    FILE_FORMAT = fileformat_gcp;
+
+
+ALTER STORAGE INTEGRATION gcp_integration
+SET  storage_allowed_locations=('gcs://snowflakecsvfile', 'gcs://snowflakejsonfile');
+
+SELECT * FROM HAPPINESS;
+
+COPY INTO @stage_gcp
+FROM
+HAPPINESS;
+-----LOADING FROM GCP JSON FILES-----------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE file format MANAGE_DB.file_formats.Json_fileformat
+    type = json
+    
+CREATE OR REPLACE stage MANAGE_DB.external_stages.JSON_folder_gcp
+    URL = 'gcs://snowflakejsonfile'
+    STORAGE_INTEGRATION = gcp_integration
+    FILE_FORMAT = MANAGE_DB.file_formats.Json_fileformat
+
+    
+  List @MANAGE_DB.external_stages.JSON_folder_gcp
+
+// First query from S3 Bucket   
+
+SELECT * FROM @MANAGE_DB.external_stages.json_folder_gcp;
+
+{
+  "Car Model": "C-Class",
+  "Car Model Year": 2001,
+  "car make": "Mercedes-Benz",
+  "first_name": "Bronny",
+  "id": 1,
+  "last_name": "Bernardotte"
+}
+
+SELECT 
+$1:"Car Model",
+$1:"Car Model Year",
+$1:"car make",
+$1:first_name,
+$1:id,
+$1:last_name,
+FROM @MANAGE_DB.external_stages.json_folder_gcp;
+
+SELECT 
+$1:id:: number as Id,
+$1:"Car Model":: String as CarModel,
+$1:"Car Model Year" as CarModelYear,
+$1:"car make":: String as CarMake,
+$1:first_name:: String as FirstName,
+$1:last_name:: String as LastName,
+FROM @MANAGE_DB.external_stages.json_folder_gcp;
+
+
+
+CREATE OR REPLACE TABLE OUR_FIRST_DB.PUBLIC.reviews_gcp (
+Id number,
+CarModel String,
+CarModelYear number,
+CarMake String,
+FirstName String,
+LastName String
+)
+
+// Copy transformed data into destination table
+COPY INTO OUR_FIRST_DB.PUBLIC.reviews_gcp
+    FROM (SELECT 
+$1:id:: number as Id,
+$1:"Car Model":: String as CarModel,
+$1:"Car Model Year" as CarModelYear,
+$1:"car make":: String as CarMake,
+$1:first_name:: String as FirstName,
+$1:last_name:: String as LastName,
+FROM @MANAGE_DB.external_stages.json_folder_gcp);
+
+select * from OUR_FIRST_DB.PUBLIC.reviews_gcp
