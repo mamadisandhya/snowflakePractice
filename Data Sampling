@@ -1,0 +1,46 @@
+CREATE OR REPLACE TRANSIENT DATABASE SAMPLING_DB;
+
+CREATE OR REPLACE VIEW ADDRESS_SAMPLE
+AS 
+SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.CUSTOMER_ADDRESS 
+SAMPLE ROW (1) SEED(27);
+
+SELECT * FROM ADDRESS_SAMPLE;
+
+
+
+SELECT CA_LOCATION_TYPE, COUNT(*)/324576*100
+FROM ADDRESS_SAMPLE
+GROUP BY CA_LOCATION_TYPE;
+
+
+
+SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.CUSTOMER_ADDRESS 
+SAMPLE SYSTEM (1) SEED(23);
+
+SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.CUSTOMER_ADDRESS 
+SAMPLE SYSTEM (10) SEED(23);
+
+---Assignment-----------------------------------------------------------------------------------------------------------------------------------------------------
+//1. Sample 5% from the table "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF10TCL"."CUSTOMER_ADDRESS"
+//Use the ROW method and seed(2) to get a reproducible result.
+//Store the result in the DEMO_DB in a table called CUSTOMER_ADDRESS_SAMPLE_5.
+
+create or replace table exercise_DB.public.CUSTOMER_ADDRESS_SAMPLE_5 as
+select * from SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.CUSTOMER_ADDRESS
+sample row(5) seed(2)
+
+select * from CUSTOMER_ADDRESS_SAMPLE_5
+//2. Sample 1% from the table "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF10TCL"."CUSTOMER"
+
+//Use the SYSTEM method and seed(2) to get a reproducible result.
+//Store the result in the DEMO_DB in a table called CUSTOMER_SAMPLE_1.
+
+create or replace table exercise_DB.public.CUSTOMER_SAMPLE_1 as
+select * from SNOWFLAKE_SAMPLE_DATA.TPCDS_SF10TCL.CUSTOMER_ADDRESS
+sample system(1) seed(2)
+
+select * from exercise_DB.public.CUSTOMER_SAMPLE_1
+
+Questions for this assignment
+How many rows are in the second created table CUSTOMER_SAMPLE_1?
