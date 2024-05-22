@@ -75,7 +75,167 @@ COPY INTO OUR_FIRST_DB.PUBLIC.ORDERS
     FROM @MANAGE_DB.external_stages.aws_stage
     file_format= (type = csv field_delimiter=',' skip_header=1)
     pattern='.*Order.*';
-    
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+CREATE DATABASE EXERCISE_DB;
+
+CREATE or replace TABLE CUSTOMER(
+  ID INT,
+  FIRST_NAME VARCHAR,
+  LAST_NAME VARCHAR,
+  EMAIL VARCHAR,
+  AGE INT,
+  CITY VARCHAR
+)
+
+CREATE OR REPLACE STAGE MANAGE_DB.external_stages.EXTER_CUSTOMER_STAGE
+   URL= 's3://snowflake-assignments-mc/loadingdata/';
+
+  DROP STAGE MANAGE_DB.external_stages.EXTER_CUSTOMER_STAGE;
+
+CREATE OR REPLACE STAGE EXTER_CUSTOMER_STAGE
+    URL= 's3://snowflake-assignments-mc/loadingdata/';
+
+LIST @EXTER_CUSTOMER_STAGE
+
+
+COPY INTO CUSTOMER
+FROM @EXERCISE_DB.PUBLIC.EXTER_CUSTOMER_STAGE
+FILE_FORMAT=(TYPE='CSV'FIELD_DELIMITER=';', SKIP_HEADER=1)
+
+SELECT * FROM CUSTOMER
+
+//file format assignment
+
+CREATE FILE FORMAT myassignment_fileFormat
+type='csv'
+field_delimiter='|',
+skip_header=1
+
+desc file format myassignment_fileFormat
+
+create or replace stage fileformat_stage
+url='s3://snowflake-assignments-mc/fileformat/'
+
+list @fileformat_stage
+
+ copy into customer
+ from @fileformat_stage
+ file_format=(format_name='myassignment_fileFormat')
+ 
+select * from customer
+
+
+//copy with validation mode
+
+create or replace table employee(
+customer_id int,
+first_name varchar(50),
+last_name varchar(50),
+email varchar(50),
+age int,
+department varchar(50)
+)
+create or replace stage aws_copy_stage
+url='s3://snowflake-assignments-mc/copyoptions/example1'
+
+List @aws_copy_stage
+
+create or replace file format vaildationMode_fileformat
+type='csv'
+field_delimiter=','
+skip_header=1
+
+copy into employee
+from @EXERCISE_DB.PUBLIC.AWS_COPY_STAGE
+file_format=(format_name='vaildationMode_fileformat')
+validation_mode='return_errors'
+
+select * from employee
+
+copy into employee
+from @EXERCISE_DB.PUBLIC.AWS_COPY_STAGE
+file_format=(format_name='vaildationMode_fileformat')
+on_error='continue'
+
+// -----------------------------------------------------------------------------------------
+//Using copy options
+
+create or replace table employee(
+customer_id int,
+first_name varchar(50),
+last_name varchar(50),
+email varchar(50),
+age int,
+department varchar(50)
+)
+
+create or replace stage aws_copy_stage
+url='s3://snowflake-assignments-mc/copyoptions/example2'
+
+list @aws_copy_stage
+
+CREATE FILE FORMAT usingcopyoptions_fileFormat
+type='csv'
+field_delimiter=',',
+skip_header=1
+
+COPY INTO EMPLOYEE
+FROM @aws_copy_stage
+file_format=(format_name='usingcopyoptions_fileFormat')
+validation_mode='return_errors'
+
+COPY INTO EMPLOYEE
+FROM @aws_copy_stage
+file_format=(format_name='usingcopyoptions_fileFormat')
+TRUNCATECOLUMNS= true
+//--------------------------------------------------------------------------------------------------------------
+//Loading Unstructured Data
+
+create or replace stage loadUnstruct_stage
+url='s3://snowflake-assignments-mc/unstructureddata/'
+
+list @loadUnstruct_stage
+
+create or replace file format loadJson_format
+Type='JSON'
+
+create or replace table Json_raw(
+raw variant)
+
+select * from Json_raw
+
+copy into Json_raw
+from @loadUnstruct_stage
+file_format=loadJson_format
+
+select * from JSON_RAW
+//------------------------------------------------------------------------------------
+//Parsing data
+select raw:first_name,
+       raw:last_name,
+       raw:Skills
+from JSON_RAW
+
+select raw:first_name:: String as first_name,
+       raw:last_name:: String as last_name,
+       raw:Skills[0] :: String as Skill_1,
+       raw:Skills[1]:: String as Skill_2
+from JSON_RAW
+
+create table json_raw_copy as 
+select raw:first_name:: String as first_ame,
+       raw:last_name:: String as last_name,
+       raw:Skills[0] :: String as Skill_1,
+       raw:Skills[1]:: String as Skill_2
+from JSON_RAW
+
+select * from json_raw_copy where first_ame ='Florina'
+
+
+
+
 
 
 
